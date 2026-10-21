@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marwat Calculator - Pro 3D</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
+
+        :root {
+            --bg-deep: #050811;
+            --panel-bg: rgba(13, 18, 30, 0.95);
+            --border-neon: rgba(234, 179, 8, 0.4);
+            --accent-gold: #eab308;
+            --accent-cyan: #38bdf8;
+            --accent-orange: #f97316;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --btn-base: rgba(26, 35, 50, 0.85);
+            --btn-hover: rgba(45, 60, 85, 0.95);
+            --shadow-3d: 0 25px 50px rgba(0, 0, 0, 0.85);
+        }
+
+        body.light-mode {
+            --bg-deep: #f1f5f9;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --border-neon: rgba(202, 138, 4, 0.4);
+            --accent-gold: #ca8a04;
+            --accent-cyan: #0284c7;
+            --accent-orange: #ea580c;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --btn-base: rgba(241, 245, 249, 0.95);
+            --btn-hover: rgba(226, 232, 240, 1);
+            --shadow-3d: 0 20px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #bg-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .calc-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 410px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-neon);
+            border-radius: 32px;
+            box-shadow: var(--shadow-3d);
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .app-title-header {
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--accent-gold);
+            letter-spacing: 1.5px;
+            text-shadow: 0 0 12px rgba(234, 179, 8, 0.5);
+        }
+
+        .utility-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            padding: 0 4px;
+        }
+
+        .utility-bar i {
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            transition: 0.2s;
+        }
+
+        .utility-bar i:hover {
+            color: var(--accent-gold);
+            background: rgba(234, 179, 8, 0.2);
+        }
+
+        .sci-drawer {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .sci-drawer.open {
+            max-height: 120px;
+            margin-bottom: 4px;
+        }
+
+        .sci-btn {
+            background: rgba(234, 179, 8, 0.15);
+            border: 1px solid rgba(234, 179, 8, 0.4);
+            color: var(--accent-gold);
+            font-size: 0.85rem;
+            font-weight: 700;
+            height: 42px;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .sci-btn:active {
+            transform: scale(0.95);
+        }
+
+        .display-box {
+            background: rgba(5, 8, 17, 0.6);
+            border: 1px solid var(--border-neon);
+            border-radius: 20px;
+            padding: 16px 20px;
+            text-align: right;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .expression-text {
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+            word-break: break-all;
+            font-family: 'Orbitron', sans-serif;
+            min-height: 40px;
+        }
+
+        .live-preview-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent-gold);
+            word-break: break-all;
+            margin-top: 4px;
+            font-family: 'Orbitron', sans-serif;
+            min-height: 25px;
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .key-btn {
+            background: var(--btn-base);
+            border: 1px solid var(--border-neon);
+            border-radius: 16px;
+            height: 58px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.1s ease;
+        }
+
+        .key-btn:hover {
+            background: var(--btn-hover);
+            border-color: var(--accent-gold);
+        }
+
+        .key-btn:active {
+            transform: scale(0.95);
+        }
+
+        .text-orange { color: var(--accent-orange); }
+        .text-cyan { color: var(--accent-cyan); }
+
+        .btn-equals {
+            background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+            color: #050811;
+            font-weight: 800;
+            border: none;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 8, 17, 0.9);
+            z-index: 150;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .history-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-neon);
+            width: 90%;
+            max-width: 360px;
+            border-radius: 28px;
+            padding: 22px;
+            max-height: 75vh;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .history-list {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 280px;
+        }
+
+        .history-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border-neon);
+            text-align: right;
+        }
+
+        .h-expr { font-size: 0.85rem; color: var(--text-muted); }
+        .h-res { font-size: 1.1rem; font-weight: 600; color: var(--text-main); font-family: 'Orbitron', sans-serif; }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="calc-container">
+        <div class="app-title-header">🚀 MARWAT CALCULATOR ⚡</div>
+
+        <div class="utility-bar">
+            <i class="fa-solid fa-clock-rotate-left" onclick="openHistory()" title="History"></i>
+            <i class="fa-solid fa-flask" onclick="toggleSci()" title="Scientific Drawer"></i>
+            <i class="fa-solid fa-volume-high" id="sound-btn" onclick="toggleSound()" title="Toggle Sound/Silent Mode"></i>
+            <i class="fa-solid fa-eye" onclick="toggleTheme()" title="Toggle Theme"></i>
+            <i class="fa-solid fa-delete-left" onclick="backspace()" title="Backspace"></i>
+        </div>
+
+        <div class="sci-drawer" id="sci-drawer">
+            <button class="sci-btn" onclick="appendSci('sin ')">sin</button>
+            <button class="sci-btn" onclick="appendSci('cos ')">cos</button>
+            <button class="sci-btn" onclick="appendSci('tan ')">tan</button>
+            <button class="sci-btn" onclick="appendSci('√ ')">√</button>
+            <button class="sci-btn" onclick="appendInput('3.14159265')">π</button>
+            <button class="sci-btn" onclick="appendSci('log ')">log</button>
+            <button class="sci-btn" onclick="appendSci('ln ')">ln</button>
+            <button class="sci-btn" onclick="appendInput('^2')">x²</button>
+            <button class="sci-btn" onclick="appendInput('^')">xʸ</button>
+            <button class="sci-btn" onclick="appendInput('2.71828182')">e</button>
+        </div>
+
+        <div class="display-box">
+            <div class="expression-text" id="expr-display">0</div>
+            <div class="live-preview-text" id="preview-display"></div>
+        </div>
+
+        <div class="keypad">
+            <button class="key-btn text-orange" onclick="clearAll()">C</button>
+            <button class="key-btn text-cyan" onclick="appendInput('%')">%</button>
+            <button class="key-btn text-cyan" onclick="smartBracket()">()</button>
+            <button class="key-btn text-cyan" onclick="appendInput('÷')">÷</button>
+
+            <button class="key-btn" onclick="appendInput('7')">7</button>
+            <button class="key-btn" onclick="appendInput('8')">8</button>
+            <button class="key-btn" onclick="appendInput('9')">9</button>
+            <button class="key-btn text-cyan" onclick="appendInput('×')">×</button>
+
+            <button class="key-btn" onclick="appendInput('4')">4</button>
+            <button class="key-btn" onclick="appendInput('5')">5</button>
+            <button class="key-btn" onclick="appendInput('6')">6</button>
+            <button class="key-btn text-cyan" onclick="appendInput('-')">−</button>
+
+            <button class="key-btn" onclick="appendInput('1')">1</button>
+            <button class="key-btn" onclick="appendInput('2')">2</button>
+            <button class="key-btn" onclick="appendInput('3')">3</button>
+            <button class="key-btn text-cyan" onclick="appendInput('+')">+</button>
+
+            <button class="key-btn" onclick="appendInput('00')">00</button>
+            <button class="key-btn" onclick="appendInput('0')">0</button>
+            <button class="key-btn" onclick="appendInput('.')">.</button>
+            <button class="key-btn btn-equals" onclick="computeFinal()">=</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="history-modal">
+        <div class="history-card">
+            <div class="history-header">
+                <span><i class="fa-solid fa-clock-rotate-left"></i> History</span>
+                <div style="display:flex; gap:12px;">
+                    <i class="fa-solid fa-trash-can" onclick="clearHistory()" style="cursor:pointer; color:var(--accent-orange);"></i>
+                    <i class="fa-solid fa-xmark" onclick="closeHistory()" style="cursor:pointer;"></i>
+                </div>
+            </div>
+            <div class="history-list" id="history-list-container"></div>
+        </div>
+    </div>
+
+    <script>
+        var currentExpr = "0";
+        var historyData = [];
+        var soundEnabled = true;
+        var audioCtx = null;
+
+        try {
+            historyData = JSON.parse(localStorage.getItem('calc_history')) || [];
+        } catch(e) { historyData = []; }
+
+        var exprDisplay = document.getElementById('expr-display');
+        var previewDisplay = document.getElementById('preview-display');
+        var sciDrawer = document.getElementById('sci-drawer');
+        var historyModal = document.getElementById('history-modal');
+        var historyListContainer = document.getElementById('history-list-container');
+        var soundBtn = document.getElementById('sound-btn');
+
+        // Sound Engine
+        function playClickSound() {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                var osc = audioCtx.createOscillator();
+                var gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.04);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.04);
+            } catch(e) {}
+
+            if (navigator.vibrate) {
+                navigator.vibrate(15);
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            if (soundEnabled) {
+                soundBtn.className = "fa-solid fa-volume-high";
+                playClickSound();
+            } else {
+                soundBtn.className = "fa-solid fa-volume-xmark";
+            }
+        }
+
+        // Background Particles
+        var canvas = document.getElementById('bg-canvas');
+        var ctx = canvas.getContext('2d');
+        var width, height;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        var particles = [];
+        for (var i = 0; i < 40; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                radius: Math.random() * 2 + 1,
+                vx: (Math.random() - 0.5) * 0.6,
+                vy: (Math.random() - 0.5) * 0.6,
+                color: Math.random() > 0.5 ? '#eab308' : '#38bdf8'
+            });
+        }
+
+        function animateBg() {
+            ctx.clearRect(0, 0, width, height);
+            for (var j = 0; j < particles.length; j++) {
+                var p = particles[j];
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+            }
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+
+        // Safe Math Parser Logic
+        function parseScientific(str) {
+            var parsed = str.replace(/×/g, '*').replace(/÷/g, '/');
+            parsed = parsed.replace(/\^2/g, '**2').replace(/\^/g, '**');
+
+            // Percentage handling
+            parsed = parsed.replace(/([0-9.]+)\s*%/g, '($1/100)');
+
+            // Under Root handling
+            parsed = parsed.replace(/√\s*([0-9.]+)/g, 'Math.sqrt($1)');
+
+            // Implicit Multiplication: 4(5) -> 4*(5)
+            parsed = parsed.replace(/(\d|\))\s*(\()/g, '$1*$2');
+            parsed = parsed.replace(/(\d)\s*(sin|cos|tan|log|ln|Math\.sqrt)/g, '$1*$2');
+
+            // Trigonometric & Scientific Functions
+            parsed = parsed.replace(/sin\s+([0-9.]+)/g, function(m, p) { return 'Math.sin((' + p + ') * Math.PI / 180)'; });
+            parsed = parsed.replace(/cos\s+([0-9.]+)/g, function(m, p) { return 'Math.cos((' + p + ') * Math.PI / 180)'; });
+            parsed = parsed.replace(/tan\s+([0-9.]+)/g, function(m, p) { return 'Math.tan((' + p + ') * Math.PI / 180)'; });
+            parsed = parsed.replace(/log\s+([0-9.]+)/g, function(m, p) { return 'Math.log10(' + p + ')'; });
+            parsed = parsed.replace(/ln\s+([0-9.]+)/g, function(m, p) { return 'Math.log(' + p + ')'; });
+
+            return parsed;
+        }
+
+        function updateScreen() {
+            exprDisplay.innerText = currentExpr;
+            try {
+                var parsed = parseScientific(currentExpr);
+                var res = eval(parsed);
+                if (res !== undefined && !isNaN(res) && currentExpr !== res.toString()) {
+                    previewDisplay.innerText = Number(res.toFixed(8)).toString();
+                } else {
+                    previewDisplay.innerText = "";
+                }
+            } catch (e) {
+                previewDisplay.innerText = "";
+            }
+        }
+
+        function appendInput(val) {
+            playClickSound();
+            if (currentExpr === "0" || currentExpr === "Error") {
+                currentExpr = val;
+            } else {
+                currentExpr += val;
+            }
+            updateScreen();
+        }
+
+        function appendSci(func) {
+            playClickSound();
+            if (currentExpr === "0" || currentExpr === "Error") {
+                currentExpr = func;
+            } else {
+                currentExpr += func;
+            }
+            updateScreen();
+        }
+
+        function smartBracket() {
+            playClickSound();
+            if (currentExpr === "Error") currentExpr = "0";
+
+            var openCount = (currentExpr.match(/\(/g) || []).length;
+            var closeCount = (currentExpr.match(/\)/g) || []).length;
+            if (currentExpr === "0") {
+                currentExpr = "(";
+            } else if (openCount > closeCount && !isNaN(currentExpr.slice(-1))) {
+                currentExpr += ")";
+            } else {
+                currentExpr += "(";
+            }
+            updateScreen();
+        }
+
+        function clearAll() {
+            playClickSound();
+            currentExpr = "0";
+            previewDisplay.innerText = "";
+            updateScreen();
+        }
+
+        function backspace() {
+            playClickSound();
+            if (currentExpr === "Error") {
+                currentExpr = "0";
+            } else if (currentExpr.length > 1) {
+                currentExpr = currentExpr.slice(-1) === " " ? currentExpr.slice(0, -4) : currentExpr.slice(0, -1);
+                if (!currentExpr) currentExpr = "0";
+            } else {
+                currentExpr = "0";
+            }
+            updateScreen();
+        }
+
+        function computeFinal() {
+            playClickSound();
+            try {
+                var parsed = parseScientific(currentExpr);
+                var rawRes = eval(parsed);
+                if (rawRes === undefined || isNaN(rawRes)) throw new Error();
+                
+                var res = Number(rawRes.toFixed(8));
+                historyData.unshift({ expr: currentExpr, res: res });
+                if (historyData.length > 20) historyData.pop();
+                localStorage.setItem('calc_history', JSON.stringify(historyData));
+
+                currentExpr = res.toString();
+                previewDisplay.innerText = "";
+                updateScreen();
+            } catch (e) {
+                currentExpr = "Error";
+                previewDisplay.innerText = "";
+                exprDisplay.innerText = currentExpr;
+            }
+        }
+
+        function toggleTheme() {
+            playClickSound();
+            document.body.classList.toggle('light-mode');
+        }
+
+        function toggleSci() {
+            playClickSound();
+            sciDrawer.classList.toggle('open');
+        }
+
+        function openHistory() {
+            playClickSound();
+            renderHistory();
+            historyModal.classList.add('active');
+        }
+
+        function closeHistory() {
+            playClickSound();
+            historyModal.classList.remove('active');
+        }
+
+        function clearHistory() {
+            playClickSound();
+            historyData = [];
+            localStorage.removeItem('calc_history');
+            renderHistory();
+        }
+
+        function renderHistory() {
+            if (historyData.length === 0) {
+                historyListContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">No history available.</p>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < historyData.length; i++) {
+                html += '<div class="history-item"><div class="h-expr">' + historyData[i].expr + '</div><div class="h-res">= ' + historyData[i].res + '</div></div>';
+            }
+            historyListContainer.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
